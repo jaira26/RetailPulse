@@ -174,7 +174,6 @@ RetailPulse/
 |-- retailpulse_queries.sql        # Table setup, data load, 5 analytical queries, validation query
 |-- superstore_cleaned.csv         # Cleaned and feature-engineered dataset
 |-- RetailPulse_Dashboard.pbix     # Power BI dashboard file
-|-- RetailPulse_Dashboard.pdf      # PDF export of all 5 pages
 |-- README.md
 ```
 
