@@ -20,6 +20,7 @@ The third question is answered by a **What-If Scenario Simulator** built with DA
 ## Dashboard Preview
 
 ![Executive Summary](images/page1_executive_summary.png)
+
 ![What-If Simulator](images/page5_whatif_simulator.png)
 
 ---
@@ -56,7 +57,7 @@ The third question is answered by a **What-If Scenario Simulator** built with DA
 
 **Regions and seasonality**
 - **South** is the weakest region across all customer segments
-- **West and East Consumer** segments consistently exceed a $200K regional revenue benchmark
+- **West and East Consumer** are the two highest-revenue region-segment combinations
 - **November 2017** was the peak month at **$118.45K**, driven by Q4 holiday demand
 
 ---
@@ -111,7 +112,6 @@ Total Profit = SUM('retailpulse sales'[profit])
 Profit Margin % = DIVIDE(SUM('retailpulse sales'[profit]), SUM('retailpulse sales'[revenue]))
 Total Orders = DISTINCTCOUNT('retailpulse sales'[order_id])
 Avg Order Value = DIVIDE([Total Revenue], [Total Orders])
-Base Cost = [Base Revenue] - [Total Profit]
 ```
 
 **What-If Simulator**
@@ -120,7 +120,7 @@ Price and discount change what is charged per unit, so they affect revenue only.
 
 ```
 Base Revenue = SUM('retailpulse sales'[revenue])
-Base Cost = SUM('retailpulse sales'[cost])
+Base Cost = [Base Revenue] - [Total Profit]
 
 Projected Revenue =
 VAR PriceChange = 'Price Change'[Price Change Value]
@@ -236,6 +236,7 @@ This produces `data/superstore_cleaned.csv`.
 - **Price elasticity:** the simulator treats price and volume as independent. In practice, raising prices usually reduces volume. A next version would add an elasticity assumption so a price increase automatically lowers projected volume.
 - **Database design:** add a primary key and indexes aligned to the dashboard's filters (region, segment, category, year) to support larger datasets.
 - **Portability:** the load step uses a hardcoded Windows file path. Writing the cleaned DataFrame directly to MySQL with `pandas.to_sql()` would remove that dependency.
+- **Discount scope:** the discount slider currently applies to all revenue, so it overlaps with the price slider. A next version would apply it only to orders that were originally discounted, using the `discounted_flag` column.
 
 ---
 
