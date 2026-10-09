@@ -111,6 +111,7 @@ Total Profit = SUM('retailpulse sales'[profit])
 Profit Margin % = DIVIDE(SUM('retailpulse sales'[profit]), SUM('retailpulse sales'[revenue]))
 Total Orders = DISTINCTCOUNT('retailpulse sales'[order_id])
 Avg Order Value = DIVIDE([Total Revenue], [Total Orders])
+Base Cost = [Base Revenue] - [Total Profit]
 ```
 
 **What-If Simulator**
