@@ -75,7 +75,7 @@ Averaging row margins gives a $10 order the same weight as a $1,000 order, which
 | Bookcases | -12.66% | -3.02% |
 | Tables | -14.77% | -8.56% |
 
-All SQL queries and Power BI measures use the revenue-weighted method. SQL results were reconciled against the Power BI measures to confirm both report the same values. The comparison query is included at the end of `scripts/retailpulse_queries.sql`.
+All SQL queries and Power BI measures use the revenue-weighted method. SQL results were reconciled against the Power BI measures to confirm both report the same values. The comparison query is included at the end of `retailpulse_queries.sql`.
 
 ---
 
@@ -169,20 +169,12 @@ Margin Delta = [Projected Margin %] - [Profit Margin %]
 ```
 RetailPulse/
 |
-|-- data/
-|   |-- Sample_-_Superstore.csv          # Raw dataset (Kaggle Superstore)
-|   |-- superstore_cleaned.csv           # Cleaned and feature-engineered dataset
-|
-|-- scripts/
-|   |-- retailpulse_cleaning.ipynb       # Python data cleaning notebook
-|   |-- retailpulse_queries.sql          # Table setup, data load, 5 analytical queries, validation query
-|
-|-- dashboard/
-|   |-- RetailPulse_Dashboard.pbix       # Power BI dashboard file
-|   |-- RetailPulse_Dashboard.pdf        # PDF export of all 5 pages
-|
-|-- images/                              # Dashboard screenshots used in this README
-|
+|-- images/                        # Dashboard screenshots used in this README
+|-- MAIN.ipynb                     # Python data cleaning and feature engineering
+|-- retailpulse_queries.sql        # Table setup, data load, 5 analytical queries, validation query
+|-- superstore_cleaned.csv         # Cleaned and feature-engineered dataset
+|-- RetailPulse_Dashboard.pbix     # Power BI dashboard file
+|-- RetailPulse_Dashboard.pdf      # PDF export of all 5 pages
 |-- README.md
 ```
 
@@ -209,23 +201,24 @@ cd RetailPulse
 
 **2. Run the cleaning notebook**
 
-```
-jupyter notebook scripts/retailpulse_cleaning.ipynb
-```
+Download the raw dataset from the Kaggle link above and place it in the repository folder, then run:
 
 This produces `data/superstore_cleaned.csv`.
+
+
+This produces `superstore_cleaned.csv`.
 
 **3. Set up the MySQL database**
 
 - In MySQL Workbench, run `SHOW VARIABLES LIKE 'secure_file_priv';` to find the folder MySQL is allowed to load files from
 - Copy `superstore_cleaned.csv` into that folder
 - Update the file path in the `LOAD DATA INFILE` statement if it differs from the default
-- Run `scripts/retailpulse_queries.sql`
+- Run `retailpulse_queries.sql`
 
 **4. Open the Power BI dashboard**
 
 - Install MySQL Connector/NET if Power BI prompts for it
-- Open `dashboard/RetailPulse_Dashboard.pbix` in Power BI Desktop
+- Open `RetailPulse_Dashboard.pbix` in Power BI Desktop
 - Update the MySQL connection to your local server and credentials
 - Click Refresh
 
