@@ -1,6 +1,12 @@
+-- RetailPulse: Sales & Revenue Analytics
+-- Table setup, data load, analytical queries, validation, and performance tests
+
 CREATE DATABASE IF NOT EXISTS retailpulse;
 USE retailpulse;
 
+-- Table definition
+-- The primary key enforces unique rows and prevents duplicate loads.
+-- Composite indexes are aligned to the dashboard's most common filters.
 CREATE TABLE IF NOT EXISTS sales (
     row_id              INT,
     order_id            VARCHAR(20),
@@ -32,15 +38,20 @@ CREATE TABLE IF NOT EXISTS sales (
     cost                DECIMAL(10,2),
     profit_margin       DECIMAL(10,2),
     discounted_flag     TINYINT,
-    revenue_band        VARCHAR(20)
+    revenue_band        VARCHAR(20),
+    PRIMARY KEY (row_id),
+    INDEX idx_region_segment (region, segment),
+    INDEX idx_category_subcategory (category, sub_category),
+    INDEX idx_year_month (order_year, order_month)
 );
 
+-- Find the folder MySQL is allowed to load files from
 SHOW VARIABLES LIKE 'secure_file_priv';
 
 -- Clear the table before loading so the script can be rerun without duplicating rows
 TRUNCATE TABLE sales;
 
--- Reload once
+-- Load the cleaned dataset
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/superstore_cleaned.csv'
 INTO TABLE sales
 FIELDS TERMINATED BY ','
@@ -57,12 +68,12 @@ SET
     order_date = STR_TO_DATE(@order_date, '%Y-%m-%d'),
     ship_date  = STR_TO_DATE(@ship_date,  '%Y-%m-%d');
 
--- Verify
+-- Verify the load: should return 9,994 rows
 SELECT COUNT(*) FROM sales;
 
 SELECT * FROM sales LIMIT 5;
 
--- Query 1 — Total Revenue, Profit and Margin by Year:
+-- Query 1: Total Revenue, Profit and Margin by Year
 -- Margin is calculated as total profit / total revenue (revenue-weighted),
 -- not as an average of row-level margins.
 SELECT
@@ -75,7 +86,7 @@ FROM sales
 GROUP BY order_year
 ORDER BY order_year;
 
--- Query 2 — Revenue and Profit by Category and Sub-Category:
+-- Query 2: Revenue and Profit by Category and Sub-Category
 SELECT
     category,
     sub_category,
@@ -87,7 +98,7 @@ FROM sales
 GROUP BY category, sub_category
 ORDER BY total_revenue DESC;
 
--- Query 3 — Revenue by Region and Segment:
+-- Query 3: Revenue by Region and Segment
 SELECT
     region,
     segment,
@@ -99,20 +110,20 @@ FROM sales
 GROUP BY region, segment
 ORDER BY total_revenue DESC;
 
--- Query 4 — Top 10 Products by Revenue:
+-- Query 4: Top 10 Products by Revenue
 SELECT
     product_name,
     category,
     sub_category,
-    ROUND(SUM(revenue), 2)   AS total_revenue,
-    ROUND(SUM(profit), 2)    AS total_profit,
-    SUM(quantity)            AS units_sold
+    ROUND(SUM(revenue), 2) AS total_revenue,
+    ROUND(SUM(profit), 2) AS total_profit,
+    SUM(quantity) AS units_sold
 FROM sales
 GROUP BY product_name, category, sub_category
 ORDER BY total_revenue DESC
 LIMIT 10;
 
--- Query 5 — Monthly Revenue Trend:
+-- Query 5: Monthly Revenue Trend
 SELECT
     order_year,
     order_month,
@@ -125,11 +136,32 @@ FROM sales
 GROUP BY order_year, order_month, order_month_name
 ORDER BY order_year, order_month;
 
+-- Validation: Average of row margins vs revenue-weighted margin
+-- Shows why the queries above use SUM(profit) / SUM(revenue) instead of AVG(profit_margin).
+-- Averaging row margins reversed the conclusion for Supplies and Machines.
 SELECT
-    category,
-    ROUND(SUM(revenue), 2) AS total_revenue,
-    ROUND(SUM(profit), 2) AS total_profit,
-    ROUND(SUM(profit) / NULLIF(SUM(revenue), 0) * 100, 2) AS profit_margin_pct
+    sub_category,
+    ROUND(AVG(profit_margin), 2) AS avg_of_row_margins,
+    ROUND(SUM(profit) / NULLIF(SUM(revenue), 0) * 100, 2) AS true_margin_pct
 FROM sales
-GROUP BY category
-ORDER BY profit_margin_pct;
+GROUP BY sub_category
+ORDER BY true_margin_pct;
+
+-- Performance: Index tests
+-- The primary key and composite indexes are defined in the CREATE TABLE statement above.
+-- Refresh table statistics so the optimizer uses accurate row estimates.
+ANALYZE TABLE sales;
+
+-- Rows read before vs after indexing (measured with EXPLAIN ANALYZE)
+--   South + Consumer:    9,994 rows (full table scan) -> 838 rows (index lookup), 92% fewer
+--   Furniture + Tables:  9,994 rows (full table scan) -> 319 rows (index lookup), 97% fewer
+
+EXPLAIN ANALYZE
+SELECT ROUND(SUM(revenue), 2), ROUND(SUM(profit), 2)
+FROM sales
+WHERE region = 'South' AND segment = 'Consumer';
+
+EXPLAIN ANALYZE
+SELECT ROUND(SUM(revenue), 2), ROUND(SUM(profit), 2)
+FROM sales
+WHERE category = 'Furniture' AND sub_category = 'Tables';
