@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS sales (
 
 SHOW VARIABLES LIKE 'secure_file_priv';
 
--- Clear the duplicate data
+-- Clear the table before loading so the script can be rerun without duplicating rows
 TRUNCATE TABLE sales;
 
 -- Reload once
@@ -63,12 +63,14 @@ SELECT COUNT(*) FROM sales;
 SELECT * FROM sales LIMIT 5;
 
 -- Query 1 — Total Revenue, Profit and Margin by Year:
-SELECT 
+-- Margin is calculated as total profit / total revenue (revenue-weighted),
+-- not as an average of row-level margins.
+SELECT
     order_year,
-    ROUND(SUM(revenue), 2)       AS total_revenue,
-    ROUND(SUM(profit), 2)        AS total_profit,
-    ROUND(AVG(profit_margin), 2) AS avg_profit_margin,
-    COUNT(DISTINCT order_id)     AS total_orders
+    ROUND(SUM(revenue), 2) AS total_revenue,
+    ROUND(SUM(profit), 2) AS total_profit,
+    ROUND(SUM(profit) / NULLIF(SUM(revenue), 0) * 100, 2) AS profit_margin_pct,
+    COUNT(DISTINCT order_id) AS total_orders
 FROM sales
 GROUP BY order_year
 ORDER BY order_year;
@@ -77,10 +79,10 @@ ORDER BY order_year;
 SELECT
     category,
     sub_category,
-    ROUND(SUM(revenue), 2)       AS total_revenue,
-    ROUND(SUM(profit), 2)        AS total_profit,
-    ROUND(AVG(profit_margin), 2) AS avg_margin,
-    SUM(quantity)                AS total_units_sold
+    ROUND(SUM(revenue), 2) AS total_revenue,
+    ROUND(SUM(profit), 2) AS total_profit,
+    ROUND(SUM(profit) / NULLIF(SUM(revenue), 0) * 100, 2) AS profit_margin_pct,
+    SUM(quantity) AS total_units_sold
 FROM sales
 GROUP BY category, sub_category
 ORDER BY total_revenue DESC;
@@ -89,10 +91,10 @@ ORDER BY total_revenue DESC;
 SELECT
     region,
     segment,
-    ROUND(SUM(revenue), 2)       AS total_revenue,
-    ROUND(SUM(profit), 2)        AS total_profit,
-    COUNT(DISTINCT customer_id)  AS unique_customers,
-    ROUND(AVG(profit_margin), 2) AS avg_margin
+    ROUND(SUM(revenue), 2) AS total_revenue,
+    ROUND(SUM(profit), 2) AS total_profit,
+    COUNT(DISTINCT customer_id) AS unique_customers,
+    ROUND(SUM(profit) / NULLIF(SUM(revenue), 0) * 100, 2) AS profit_margin_pct
 FROM sales
 GROUP BY region, segment
 ORDER BY total_revenue DESC;
@@ -115,10 +117,19 @@ SELECT
     order_year,
     order_month,
     order_month_name,
-    ROUND(SUM(revenue), 2)       AS monthly_revenue,
-    ROUND(SUM(profit), 2)        AS monthly_profit,
-    COUNT(DISTINCT order_id)     AS total_orders,
-    ROUND(AVG(profit_margin), 2) AS avg_margin
+    ROUND(SUM(revenue), 2) AS monthly_revenue,
+    ROUND(SUM(profit), 2) AS monthly_profit,
+    COUNT(DISTINCT order_id) AS total_orders,
+    ROUND(SUM(profit) / NULLIF(SUM(revenue), 0) * 100, 2) AS profit_margin_pct
 FROM sales
 GROUP BY order_year, order_month, order_month_name
 ORDER BY order_year, order_month;
+
+SELECT
+    category,
+    ROUND(SUM(revenue), 2) AS total_revenue,
+    ROUND(SUM(profit), 2) AS total_profit,
+    ROUND(SUM(profit) / NULLIF(SUM(revenue), 0) * 100, 2) AS profit_margin_pct
+FROM sales
+GROUP BY category
+ORDER BY profit_margin_pct;
